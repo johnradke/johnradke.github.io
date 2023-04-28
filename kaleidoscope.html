@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>kaleidescope</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+
+<script src="script/bedrock.js"></script>
+<script src="script/canvasproxy.js"></script>
+<script>
+window.onload = function() {
+    var cv = new CanvasProxy($.id('canvas'), { 
+        fillScreen: true,
+        centerOrigin: true
+    });
+
+    var trans = 1;
+    var colors = cv.getLinearGradient(rgba(255,0,0,trans),
+        rgba(255,165,0,trans),
+        rgba(255, 255, 0, trans), 
+        rgba(0, 255, 0, trans),
+        rgba(0, 0, 255, trans),
+        rgba(127, 0, 127, trans)
+    );
+
+    // [x, 0, 0, y, 0, 0] scales by (x, y)
+    // [0, x, y, 0, 0, 0] scales by (y, x)
+    var mirrorTransforms = [
+        [1, 0, 0, 1, 0, 0],
+        [0, 1, 1, 0, 0, 0],
+        [-1, 0, 0, 1, 0, 0],
+        [0, -1, 1, 0, 0, 0],
+        [-1, 0, 0, -1, 0, 0],
+        [0, -1, -1, 0, 0, 0],
+        [1, 0, 0, -1, 0, 0],
+        [0, 1, -1, 0, 0, 0]
+    ];
+
+    var sin45 = cos45 = Math.sqrt(2)/2;
+    var rotateTransforms = [
+        [1, 0, 0, 1, 0, 0],
+        [cos45, sin45, -sin45, cos45, 0, 0],
+        [0, 1, -1, 0, 0, 0],
+        [-cos45, sin45, -sin45, -cos45, 0, 0],
+        [-1, 0, 0, -1, 0, 0],
+        [-cos45, -sin45, sin45, -cos45, 0, 0],
+        [0, -1, 1, 0, 0, 0],
+        [cos45, -sin45, sin45, cos45, 0, 0]
+
+    ];
+
+    var lineLength = 30;
+    var lineWidth = 2;
+
+    var path = new MaxQueue(lineLength);
+
+    cv.eachFrame = function() {
+        if (this.isMouseDown() && !this.getMousePos().equals(path[0])) {
+            var lastPos = null;
+            cv.clear();
+
+            if (path.length >= 2) {
+                rotateTransforms.forEach(function(transform) {
+                    cv.withTransform(transform, function() {
+                        cv.drawPath(path, {color: colors, lineWidth: lineWidth});
+                        cv.withScale(-1, 1, function() {
+                            cv.drawPath(path, {color: colors, lineWidth: lineWidth});
+                        })
+                    });
+                });
+            }
+
+            path.Add(this.getMousePos());
+        }
+    }
+
+    cv.startAnimation();
+};
+</script>
+
+</html>
